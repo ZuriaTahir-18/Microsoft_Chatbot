@@ -45,12 +45,16 @@ def financial_chatbot(query):
     companies = extract_companies(query)
     years = extract_years(query)
 
-    # Detect invalid companies (mentioned but not in dataset)
-    mentioned_words = re.findall(r"[A-Za-z]+", query)  # extract words
-    invalid_companies = [w for w in mentioned_words if w.capitalize() not in valid_companies and w.lower() not in ["revenue", "income", "assets", "liabilities", "cash", "flow", "compare", "with", "in", "of", "and"]]
+    # Detect unknown company words
+    mentioned_words = re.findall(r"[A-Za-z]+", query)
+    invalid_companies = [
+        w for w in mentioned_words
+        if w.capitalize() not in valid_companies
+        and w.lower() not in ["revenue", "income", "assets", "liabilities", "cash", "flow", "compare", "with", "in", "of", "and"]
+    ]
 
     if invalid_companies:
-        return f"⚠️ You mentioned an unknown company: **{', '.join(set(invalid_companies))}**. Please compare only Microsoft, Tesla, or Apple."
+        return f"⚠️ Sorry, I don’t recognize **{', '.join(set(invalid_companies))}**. Please recheck the spelling or compare only Microsoft, Tesla, or Apple."
 
     if not companies:
         return "⚠️ Please specify at least one company (Microsoft, Tesla, or Apple)."
