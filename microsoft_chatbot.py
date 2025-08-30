@@ -108,6 +108,7 @@ def financial_chatbot(query):
             x="Year:O", y="Value:Q", color="Year:N", tooltip=["Year", "Company and Metric", "Value"]
         )
         return (df, chart, notify_msg)
+        
 
     # single company
     else:
@@ -195,3 +196,4 @@ if query:
     response = financial_chatbot(query)
     st.session_state.history.append((query, response))
     st.rerun()  # refresh to show new message at bottom
+
