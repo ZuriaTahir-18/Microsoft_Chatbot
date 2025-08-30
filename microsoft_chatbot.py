@@ -2,6 +2,7 @@ import streamlit as st
 import re
 import pandas as pd
 import altair as alt
+import difflib
 
 # ----------------- Financial Data -----------------
 financial_data = [
@@ -37,9 +38,29 @@ def extract_years(query):
     years = re.findall(r'\b(20\d{2})\b', query)
     return [int(y) for y in years] if years else []
 
+# ✅ Spell check function
+def spell_check(query):
+    valid_words = ["microsoft", "tesla", "apple", "revenue", "net income", "assets", "liabilities", "cash flow"]
+    words = query.lower().split()
+    corrections = {}
+    for w in words:
+        match = difflib.get_close_matches(w, valid_words, n=1, cutoff=0.75)
+        if match and match[0] != w:
+            corrections[w] = match[0]
+    return corrections
+
 # ----------------- Chatbot Logic -----------------
 def financial_chatbot(query):
     query_lower = query.lower()
+
+    # 🔍 Check spelling first
+    corrections = spell_check(query)
+    if corrections:
+        suggestion = query
+        for wrong, right in corrections.items():
+            suggestion = suggestion.replace(wrong, right)
+        return f"⚠️ Did you mean: **'{suggestion}'**? Please edit your query."
+
     companies = extract_companies(query)
     years = extract_years(query)
 
@@ -89,7 +110,25 @@ def financial_chatbot(query):
 st.set_page_config(page_title="Financial Data Chatbot", page_icon="💬", layout="wide")
 
 st.title("💬 Financial Data Chatbot")
-st.markdown("Ask me about **Revenue, Net Income, Assets, Liabilities, or Cash Flow** for **Microsoft, Tesla, and Apple**.")
+
+# 📘 Dataset description
+st.markdown("""
+### 📘 About this Chatbot  
+This chatbot helps you explore **financial data (2022–2024)** for **Microsoft, Tesla, and Apple**.  
+You can ask about:  
+- **Revenue**  
+- **Net Income**  
+- **Total Assets**  
+- **Total Liabilities**  
+- **Cash Flow**  
+
+💡 Example Questions:  
+- "Show me Tesla revenue in 2023"  
+- "Compare Apple vs Microsoft net income"  
+- "What is the cash flow of Microsoft?"  
+
+👉 If you make a typo, the chatbot will suggest corrections (e.g., "aple" → "Apple").
+""")
 
 # Chat history
 if "history" not in st.session_state:
