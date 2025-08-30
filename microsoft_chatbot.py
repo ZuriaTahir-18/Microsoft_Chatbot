@@ -166,6 +166,7 @@ You can ask questions like:
 
 👉 You must **specify a company name** in your query.  
 👉 You can also compare multiple companies in one query
+
 👉 Please check for spelling errors for better accuracy!
 
 
@@ -201,6 +202,7 @@ if query:
     response = financial_chatbot(query)
     st.session_state.history.append((query, response))
     st.rerun()  # refresh to show new message at bottom
+
 
 
 
