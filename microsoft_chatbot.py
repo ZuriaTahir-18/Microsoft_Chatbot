@@ -25,14 +25,14 @@ financial_data = [
      "Total Liabilities": 3.08E11, "Cash Flow": 1.18E11},
 ]
 
-valid_companies = ["Microsoft", "Tesla", "Apple"]
+valid_companies = {"Microsoft", "Tesla", "Apple"}
 
 # ----------------- Helper Functions -----------------
 def extract_companies(query):
     companies = []
-    for comp in valid_companies:
-        if comp.lower() in query.lower():
-            companies.append(comp)
+    for item in financial_data:
+        if item["Company"].lower() in query.lower():
+            companies.append(item["Company"])
     return list(set(companies))
 
 def extract_years(query):
@@ -45,19 +45,12 @@ def financial_chatbot(query):
     companies = extract_companies(query)
     years = extract_years(query)
 
-    # Detect unknown company words
-    mentioned_words = re.findall(r"[A-Za-z]+", query)
-    invalid_companies = [
-        w for w in mentioned_words
-        if w.capitalize() not in valid_companies
-        and w.lower() not in ["revenue", "income", "assets", "liabilities", "cash", "flow", "compare", "with", "in", "of", "and"]
-    ]
-
-    if invalid_companies:
-        return f"⚠️ Sorry, I don’t recognize **{', '.join(set(invalid_companies))}**. Please recheck the spelling or compare only Microsoft, Tesla, or Apple."
-
-    if not companies:
-        return "⚠️ Please specify at least one company (Microsoft, Tesla, or Apple)."
+    # detect unknown company mentions
+    words = re.findall(r'\b[a-zA-Z]+\b', query)
+    possible_companies = [w.capitalize() for w in words if w.capitalize() not in valid_companies]
+    notify_msg = ""
+    if possible_companies:
+        notify_msg = f"⚠️ Sorry, I only have data for Microsoft, Tesla, and Apple. Did you mean one of them? Please recheck your spelling if it was a typo."
 
     if "revenue" in query_lower:
         metric = "Total Revenue"
@@ -72,6 +65,9 @@ def financial_chatbot(query):
     else:
         return "⚠️ Sorry, I can only provide info on revenue, net income, assets, liabilities, or cash flow."
 
+    if not companies:
+        return notify_msg or "⚠️ Please mention at least one company (Microsoft, Tesla, or Apple)."
+
     # comparison (multiple companies)
     if len(companies) >= 2:
         data_companies = {
@@ -79,58 +75,94 @@ def financial_chatbot(query):
             for comp in companies
         }
         if not any(data_companies.values()):
-            return "No data found."
+            return notify_msg or "No data found."
         all_years = sorted(set([d["Year"] for data in data_companies.values() for d in data]))
         df = pd.DataFrame({"Year": all_years})
         for comp in companies:
             df[comp] = [next((d[metric] for d in data_companies[comp] if d["Year"] == y), None) for y in all_years]
-        return df
+        return (df, notify_msg)
 
     # single company
     else:
         comp = companies[0]
         data = [item for item in financial_data if item["Company"] == comp and (not years or item["Year"] in years)]
         if not data:
-            return "No data found."
+            return notify_msg or "No data found."
         df = pd.DataFrame({
             "Year": [d["Year"] for d in data],
             f"{metric} ({comp})": [d[metric] for d in data]
         })
-        return df
+        return (df, notify_msg)
 
 # ----------------- Streamlit App -----------------
 st.set_page_config(page_title="Financial Data Chatbot", page_icon="💬", layout="wide")
 
 st.title("💬 Financial Data Chatbot")
 
-st.markdown("Ask about **Revenue, Net Income, Assets, Liabilities, or Cash Flow** for **Microsoft, Tesla, and Apple**.")
+# ----------------- Description Section -----------------
+st.markdown("""
+### 📊 About This Chatbot
+This chatbot is designed to help you explore the **financial performance** of three major companies:
+- **Microsoft**
+- **Tesla**
+- **Apple**
 
+The data includes the following metrics:
+- **Total Revenue** – Company’s total income from sales.
+- **Net Income** – Profit after all expenses are deducted.
+- **Total Assets** – Everything the company owns (e.g., buildings, cash, equipment).
+- **Total Liabilities** – Everything the company owes (e.g., loans, debt).
+- **Cash Flow** – The money coming in and out of the business.
+
+### 💡 How to Use
+You can ask questions like:
+- `What is Apple's net income in 2023?`
+- `Compare Microsoft and Tesla revenue`
+- `Show Tesla cash flow over the years`
+- `Give me Apple’s total assets`
+
+👉 You must **specify a company name** in your query.  
+👉 You can also compare multiple companies in one query.
+
+---
+""")
+
+st.markdown("Ask me about **Revenue, Net Income, Assets, Liabilities, or Cash Flow** for **Microsoft, Tesla, and Apple**.")
+
+# Chat history
 if "history" not in st.session_state:
     st.session_state.history = []
 
+# Display chat history
 for q, r in st.session_state.history:
     st.markdown(f"**🧑 You:** {q}")
-    if isinstance(r, pd.DataFrame):
-        st.dataframe(r, use_container_width=True)
+    if isinstance(r, tuple):  # response with df + notify
+        df, notify_msg = r
+        if isinstance(df, pd.DataFrame):
+            st.dataframe(df, use_container_width=True)
 
-        if len(r.columns) > 2:  # comparison chart
-            df_melt = r.melt("Year", var_name="Company", value_name="Value")
-            chart = alt.Chart(df_melt).mark_line(point=True).encode(
-                x="Year:O", y="Value:Q", color="Company:N"
-            )
-            st.altair_chart(chart, use_container_width=True)
-        else:  # single company
-            col_name = r.columns[1]
-            chart = alt.Chart(r).mark_bar().encode(
-                x="Year:O", y=col_name, color=alt.value("teal")
-            )
-            st.altair_chart(chart, use_container_width=True)
+            # also show chart
+            if len(df.columns) > 2:  # comparison chart
+                df_melt = df.melt("Year", var_name="Company", value_name="Value")
+                chart = alt.Chart(df_melt).mark_line(point=True).encode(
+                    x="Year:O", y="Value:Q", color="Company:N"
+                )
+                st.altair_chart(chart, use_container_width=True)
+            else:  # single company
+                col_name = df.columns[1]
+                chart = alt.Chart(df).mark_bar().encode(
+                    x="Year:O", y=col_name, color=alt.value("teal")
+                )
+                st.altair_chart(chart, use_container_width=True)
+        if notify_msg:
+            st.info(notify_msg)
     else:
         st.warning(r)
 
+# ✅ Input always at the bottom
 query = st.chat_input("💡 Ask your question here...")
 
 if query:
     response = financial_chatbot(query)
     st.session_state.history.append((query, response))
-    st.rerun()
+    st.rerun()  # refresh to show new message at bottom
