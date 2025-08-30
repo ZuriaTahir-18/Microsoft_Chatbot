@@ -95,12 +95,6 @@ st.markdown("Ask me about **Revenue, Net Income, Assets, Liabilities, or Cash Fl
 if "history" not in st.session_state:
     st.session_state.history = []
 
-query = st.text_input("💡 Enter your query:")
-
-if query:
-    response = financial_chatbot(query)
-    st.session_state.history.append((query, response))
-
 # Display chat history
 for q, r in st.session_state.history:
     st.markdown(f"**🧑 You:** {q}")
@@ -120,6 +114,13 @@ for q, r in st.session_state.history:
                 x="Year:O", y=col_name, color=alt.value("teal")
             )
             st.altair_chart(chart, use_container_width=True)
-
     else:
         st.warning(r)
+
+# ✅ Input always at the bottom
+query = st.chat_input("💡 Ask your question here...")
+
+if query:
+    response = financial_chatbot(query)
+    st.session_state.history.append((query, response))
+    st.rerun()  # refresh to show new message at bottom
