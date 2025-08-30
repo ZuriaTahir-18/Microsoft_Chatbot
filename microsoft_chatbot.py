@@ -2,7 +2,6 @@ import streamlit as st
 import re
 import pandas as pd
 import altair as alt
-import difflib
 
 # ----------------- Financial Data -----------------
 financial_data = [
@@ -38,29 +37,9 @@ def extract_years(query):
     years = re.findall(r'\b(20\d{2})\b', query)
     return [int(y) for y in years] if years else []
 
-# ✅ Spell check function
-def spell_check(query):
-    valid_words = ["microsoft", "tesla", "apple", "revenue", "net income", "assets", "liabilities", "cash flow"]
-    words = query.lower().split()
-    corrections = {}
-    for w in words:
-        match = difflib.get_close_matches(w, valid_words, n=1, cutoff=0.75)
-        if match and match[0] != w:
-            corrections[w] = match[0]
-    return corrections
-
 # ----------------- Chatbot Logic -----------------
 def financial_chatbot(query):
     query_lower = query.lower()
-
-    # 🔍 Check spelling first
-    corrections = spell_check(query)
-    if corrections:
-        suggestion = query
-        for wrong, right in corrections.items():
-            suggestion = suggestion.replace(wrong, right)
-        return f"⚠️ Did you mean: **'{suggestion}'**? Please edit your query."
-
     companies = extract_companies(query)
     years = extract_years(query)
 
@@ -111,24 +90,35 @@ st.set_page_config(page_title="Financial Data Chatbot", page_icon="💬", layout
 
 st.title("💬 Financial Data Chatbot")
 
-# 📘 Dataset description
+# ----------------- Description Section -----------------
 st.markdown("""
-### 📘 About this Chatbot  
-This chatbot helps you explore **financial data (2022–2024)** for **Microsoft, Tesla, and Apple**.  
-You can ask about:  
-- **Revenue**  
-- **Net Income**  
-- **Total Assets**  
-- **Total Liabilities**  
-- **Cash Flow**  
+### 📊 About This Chatbot
+This chatbot is designed to help you explore the **financial performance** of three major companies:
+- **Microsoft**
+- **Tesla**
+- **Apple**
 
-💡 Example Questions:  
-- "Show me Tesla revenue in 2023"  
-- "Compare Apple vs Microsoft net income"  
-- "What is the cash flow of Microsoft?"  
+The data includes the following metrics:
+- **Total Revenue** – Company’s total income from sales.
+- **Net Income** – Profit after all expenses are deducted.
+- **Total Assets** – Everything the company owns (e.g., buildings, cash, equipment).
+- **Total Liabilities** – Everything the company owes (e.g., loans, debt).
+- **Cash Flow** – The money coming in and out of the business.
 
-👉 If you make a typo, the chatbot will suggest corrections (e.g., "aple" → "Apple").
+### 💡 How to Use
+You can ask questions like:
+- `What is Apple's net income in 2023?`
+- `Compare Microsoft and Tesla revenue`
+- `Show Tesla cash flow over the years`
+- `Give me Apple’s total assets`
+
+👉 If you don’t mention a company, the chatbot will assume **Microsoft** by default.  
+👉 You can also compare multiple companies in one query.
+
+---
 """)
+
+st.markdown("Ask me about **Revenue, Net Income, Assets, Liabilities, or Cash Flow** for **Microsoft, Tesla, and Apple**.")
 
 # Chat history
 if "history" not in st.session_state:
