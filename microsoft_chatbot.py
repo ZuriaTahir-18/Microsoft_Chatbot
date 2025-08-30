@@ -104,8 +104,8 @@ def financial_chatbot(query):
 
         # Plot the comparison chart
         df_melt = df.melt("Year", var_name="Company and Metric", value_name="Value")
-        chart = alt.Chart(df_melt).mark_line(point=True).encode(
-            x="Year:O", y="Value:Q", color="Company and Metric:N"
+        chart = alt.Chart(df_melt).mark_bar().encode(
+            x="Year:O", y="Value:Q", color="Year:N", tooltip=["Year", "Company and Metric", "Value"]
         )
         return (df, chart, notify_msg)
 
@@ -129,7 +129,7 @@ def financial_chatbot(query):
 
         # Plot the individual company chart
         chart = alt.Chart(df).mark_bar().encode(
-            x="Year:O", y=f"{metric} ({comp}):Q", color=alt.value("teal")
+            x="Year:O", y=f"{metric} ({comp}):Q", color="Year:N", tooltip=["Year", f"{metric} ({comp})"]
         )
         return (df, chart, notify_msg)
 
