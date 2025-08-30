@@ -103,12 +103,15 @@ def financial_chatbot(query):
             df[col] = df[col].apply(lambda x: convert_to_million(x) if x is not None else x)
 
         # Plot the comparison chart
-        df_melt = df.melt("Year", var_name="Company and Metric", value_name="Value")
-        chart = alt.Chart(df_melt).mark_bar().encode(
-            x="Year:O", y="Value:Q", color="Year:N", tooltip=["Year", "Company and Metric", "Value"]
-        )
-        return (df, chart, notify_msg)
-        
+df_melt = df.melt("Year", var_name="Company and Metric", value_name="Value")
+chart = alt.Chart(df_melt).mark_bar().encode(
+    x="Year:O", 
+    y="Value:Q", 
+    color=alt.Color("Year:N", scale=alt.Scale(scheme='category20')),
+    tooltip=["Year", "Company and Metric", "Value"]
+)
+return (df, chart, notify_msg)
+
 
     # single company
     else:
@@ -162,7 +165,9 @@ You can ask questions like:
 - `Give me Apple’s total assets`
 
 👉 You must **specify a company name** in your query.  
-👉 You can also compare multiple companies in one query.
+👉 You can also compare multiple companies in one query
+👉 Please check for spelling errors for better accuracy!
+
 
 ---
 """)
@@ -196,4 +201,5 @@ if query:
     response = financial_chatbot(query)
     st.session_state.history.append((query, response))
     st.rerun()  # refresh to show new message at bottom
+
 
