@@ -45,14 +45,13 @@ def financial_chatbot(query):
     companies = extract_companies(query)
     years = extract_years(query)
 
-    # detect unknown company mentions (only when the query has invalid company names)
-    words = re.findall(r'\b[a-zA-Z]+\b', query)
-    possible_companies = [w.capitalize() for w in words if w.capitalize() not in valid_companies]
+    # Only check for unknown companies if no valid company is found
     notify_msg = ""
-    
-    # only show notification when a user enters a company that's not in the dataset
-    if possible_companies and any(c not in valid_companies for c in possible_companies):
-        notify_msg = f"⚠️ Sorry, I only have data for Microsoft, Tesla, and Apple. Did you mean one of them? Please recheck your spelling if it was a typo."
+    if not companies:
+        words = re.findall(r'\b[a-zA-Z]+\b', query)
+        possible_companies = [w.capitalize() for w in words if w.capitalize() not in valid_companies]
+        if possible_companies:
+            notify_msg = f"⚠️ Sorry, I only have data for Microsoft, Tesla, and Apple. Did you mean one of them? Please recheck your spelling if it was a typo."
 
     if "revenue" in query_lower:
         metric = "Total Revenue"
@@ -65,7 +64,7 @@ def financial_chatbot(query):
     elif "cash flow" in query_lower or "cash" in query_lower:
         metric = "Cash Flow"
     else:
-        return "⚠️ Sorry, I can only provide info on revenue, net income, assets, liabilities, or cash flow of Microsoft , Tesla and Apple."
+        return "⚠️ Sorry, I can only provide info on revenue, net income, assets, liabilities, or cash flow."
 
     if not companies:
         return notify_msg or "⚠️ Please mention at least one company (Microsoft, Tesla, or Apple)."
@@ -168,4 +167,3 @@ if query:
     response = financial_chatbot(query)
     st.session_state.history.append((query, response))
     st.rerun()  # refresh to show new message at bottom
-
