@@ -45,12 +45,12 @@ def financial_chatbot(query):
     companies = extract_companies(query)
     years = extract_years(query)
 
-    # Only check for unknown companies if no valid company is found
+    # Check if any unknown companies were mentioned in the query
     notify_msg = ""
-    if not companies:
-        words = re.findall(r'\b[a-zA-Z]+\b', query)
-        possible_companies = [w.capitalize() for w in words if w.capitalize() not in valid_companies]
-        if possible_companies:
+    if companies:
+        # Check if any of the companies mentioned is not in the valid list
+        unknown_companies = [company for company in companies if company not in valid_companies]
+        if unknown_companies:
             notify_msg = f"⚠️ Sorry, I only have data for Microsoft, Tesla, and Apple. Did you mean one of them? Please recheck your spelling if it was a typo."
 
     if "revenue" in query_lower:
