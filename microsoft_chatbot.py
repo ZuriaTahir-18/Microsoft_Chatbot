@@ -25,12 +25,14 @@ financial_data = [
      "Total Liabilities": 3.08E11, "Cash Flow": 1.18E11},
 ]
 
+valid_companies = ["Microsoft", "Tesla", "Apple"]
+
 # ----------------- Helper Functions -----------------
 def extract_companies(query):
     companies = []
-    for item in financial_data:
-        if item["Company"].lower() in query.lower():
-            companies.append(item["Company"])
+    for comp in valid_companies:
+        if comp.lower() in query.lower():
+            companies.append(comp)
     return list(set(companies))
 
 def extract_years(query):
@@ -42,6 +44,13 @@ def financial_chatbot(query):
     query_lower = query.lower()
     companies = extract_companies(query)
     years = extract_years(query)
+
+    # Detect invalid companies (mentioned but not in dataset)
+    mentioned_words = re.findall(r"[A-Za-z]+", query)  # extract words
+    invalid_companies = [w for w in mentioned_words if w.capitalize() not in valid_companies and w.lower() not in ["revenue", "income", "assets", "liabilities", "cash", "flow", "compare", "with", "in", "of", "and"]]
+
+    if invalid_companies:
+        return f"⚠️ You mentioned an unknown company: **{', '.join(set(invalid_companies))}**. Please compare only Microsoft, Tesla, or Apple."
 
     if not companies:
         return "⚠️ Please specify at least one company (Microsoft, Tesla, or Apple)."
@@ -90,47 +99,16 @@ st.set_page_config(page_title="Financial Data Chatbot", page_icon="💬", layout
 
 st.title("💬 Financial Data Chatbot")
 
-# ----------------- Description Section -----------------
-st.markdown("""
-### 📊 About This Chatbot
-This chatbot is designed to help you explore the **financial performance** of three major companies:
-- **Microsoft**
-- **Tesla**
-- **Apple**
+st.markdown("Ask about **Revenue, Net Income, Assets, Liabilities, or Cash Flow** for **Microsoft, Tesla, and Apple**.")
 
-The data includes the following metrics:
-- **Total Revenue** – Company’s total income from sales.
-- **Net Income** – Profit after all expenses are deducted.
-- **Total Assets** – Everything the company owns (e.g., buildings, cash, equipment).
-- **Total Liabilities** – Everything the company owes (e.g., loans, debt).
-- **Cash Flow** – The money coming in and out of the business.
-
-### 💡 How to Use
-You can ask questions like:
-- `What is Apple's net income in 2023?`
-- `Compare Microsoft and Tesla revenue`
-- `Show Tesla cash flow over the years`
-- `Give me Apple’s total assets`
-
-👉 You must **specify a company name** in your query.  
-👉 You can also compare multiple companies in one query.
-
----
-""")
-
-st.markdown("Ask me about **Revenue, Net Income, Assets, Liabilities, or Cash Flow** for **Microsoft, Tesla, and Apple**.")
-
-# Chat history
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# Display chat history
 for q, r in st.session_state.history:
     st.markdown(f"**🧑 You:** {q}")
     if isinstance(r, pd.DataFrame):
         st.dataframe(r, use_container_width=True)
 
-        # also show chart
         if len(r.columns) > 2:  # comparison chart
             df_melt = r.melt("Year", var_name="Company", value_name="Value")
             chart = alt.Chart(df_melt).mark_line(point=True).encode(
@@ -146,10 +124,9 @@ for q, r in st.session_state.history:
     else:
         st.warning(r)
 
-# ✅ Input always at the bottom
 query = st.chat_input("💡 Ask your question here...")
 
 if query:
     response = financial_chatbot(query)
     st.session_state.history.append((query, response))
-    st.rerun()  # refresh to show new message at bottom
+    st.rerun()
