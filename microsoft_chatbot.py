@@ -36,8 +36,18 @@ def extract_companies(query):
     return list(set(companies))
 
 def extract_years(query):
+    # Capture years in the form of "2022 to 2024"
     years = re.findall(r'\b(20\d{2})\b', query)
-    return [int(y) for y in years] if years else []
+    
+    # If there are two years separated by 'to', include all years in that range
+    if len(years) == 2:
+        start_year, end_year = int(years[0]), int(years[1])
+        years_in_range = list(range(start_year, end_year + 1))
+        return years_in_range
+    
+    # If only one year is found, return that
+    return [int(year) for year in years] if years else []
+
 
 # ----------------- Chatbot Logic -----------------
 def financial_chatbot(query):
@@ -167,4 +177,5 @@ if query:
     response = financial_chatbot(query)
     st.session_state.history.append((query, response))
     st.rerun()  # refresh to show new message at bottom
+
 
