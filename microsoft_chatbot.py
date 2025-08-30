@@ -44,10 +44,10 @@ def extract_years(query):
     return [int(year) for year in years] if years else []
 
 def convert_to_million(value):
-    """Convert numbers to millions for better readability when displaying."""
+    """Convert numbers to millions for better readability."""
     if value >= 1E6:
-        return f"{value / 1E6:.1f}M"  # One decimal place for cleaner output
-    return str(value)
+        return value / 1E6  # Return as numeric value for graph
+    return value
 
 # ----------------- Chatbot Logic -----------------
 def financial_chatbot(query):
@@ -91,10 +91,16 @@ def financial_chatbot(query):
         for comp in companies:
             df[comp] = [next((d[metric] for d in data_companies[comp] if d["Year"] == y), None) for y in all_years]
         
-        # Convert the values to millions only for displaying purposes
+        # Convert the values to millions (numerically) before plotting
         for col in df.columns[1:]:
             df[col] = df[col].apply(lambda x: convert_to_million(x) if x is not None else x)
-        return (df, notify_msg)
+
+        # Plot the comparison chart
+        df_melt = df.melt("Year", var_name="Company", value_name="Value")
+        chart = alt.Chart(df_melt).mark_line(point=True).encode(
+            x="Year:O", y="Value:Q", color="Company:N"
+        )
+        return (df, chart, notify_msg)
 
     # single company
     else:
@@ -106,10 +112,15 @@ def financial_chatbot(query):
             "Year": [d["Year"] for d in data],
             f"{metric} ({comp})": [d[metric] for d in data]
         })
-        
-        # Convert the values to millions only for displaying purposes
+
+        # Convert the values to millions (numerically) before plotting
         df[f"{metric} ({comp})"] = df[f"{metric} ({comp})"].apply(lambda x: convert_to_million(x) if x is not None else x)
-        return (df, notify_msg)
+
+        # Plot the individual company chart
+        chart = alt.Chart(df).mark_bar().encode(
+            x="Year:O", y=f"{metric} ({comp}):Q", color=alt.value("teal")
+        )
+        return (df, chart, notify_msg)
 
 # ----------------- Streamlit App -----------------
 st.set_page_config(page_title="Financial Data Chatbot", page_icon="💬", layout="wide")
@@ -153,24 +164,14 @@ if "history" not in st.session_state:
 # Display chat history
 for q, r in st.session_state.history:
     st.markdown(f"**🧑 You:** {q}")
-    if isinstance(r, tuple):  # response with df + notify
-        df, notify_msg = r
+    if isinstance(r, tuple):  # response with df + chart + notify
+        df, chart, notify_msg = r
         if isinstance(df, pd.DataFrame):
             st.dataframe(df, use_container_width=True)
 
-            # also show chart
-            if len(df.columns) > 2:  # comparison chart
-                df_melt = df.melt("Year", var_name="Company", value_name="Value")
-                chart = alt.Chart(df_melt).mark_line(point=True).encode(
-                    x="Year:O", y="Value:Q", color="Company:N"
-                )
-                st.altair_chart(chart, use_container_width=True)
-            else:  # single company
-                col_name = df.columns[1]
-                chart = alt.Chart(df).mark_bar().encode(
-                    x="Year:O", y=col_name, color=alt.value("teal")
-                )
-                st.altair_chart(chart, use_container_width=True)
+            # Display the chart
+            st.altair_chart(chart, use_container_width=True)
+
         if notify_msg:
             st.info(notify_msg)
     else:
