@@ -55,25 +55,29 @@ def financial_chatbot(query):
     companies = extract_companies(query)
     years = extract_years(query)
 
+    # Handle multiple metrics (assets, revenue, etc.)
+    metrics = []
+    if "revenue" in query_lower:
+        metrics.append("Total Revenue")
+    if "assets" in query_lower:
+        metrics.append("Total Assets")
+    if "net income" in query_lower:
+        metrics.append("Net Income")
+    if "liabilities" in query_lower:
+        metrics.append("Total Liabilities")
+    if "cash flow" in query_lower:
+        metrics.append("Cash Flow")
+
+    # If no valid metric is found, return error message
+    if not metrics:
+        return "⚠️ Sorry, I can only provide info on revenue, net income, assets, liabilities, or cash flow."
+
     # Check if any unknown companies were mentioned in the query
     notify_msg = ""
     if companies:
         unknown_companies = [company for company in companies if company not in valid_companies]
         if unknown_companies:
             notify_msg = f"⚠️ Sorry, I only have data for Microsoft, Tesla, and Apple. Did you mean one of them? Please recheck your spelling if it was a typo."
-
-    if "revenue" in query_lower:
-        metric = "Total Revenue"
-    elif "net income" in query_lower:
-        metric = "Net Income"
-    elif "total assets" in query_lower or "assets" in query_lower:
-        metric = "Total Assets"
-    elif "total liabilities" in query_lower or "liabilities" in query_lower:
-        metric = "Total Liabilities"
-    elif "cash flow" in query_lower or "cash" in query_lower:
-        metric = "Cash Flow"
-    else:
-        return "⚠️ Sorry, I can only provide info on revenue, net income, assets, liabilities, or cash flow of Microsoft , Tesla and Apple."
 
     if not companies:
         return notify_msg or "⚠️ Please mention at least one company (Microsoft, Tesla, or Apple)."
@@ -88,17 +92,20 @@ def financial_chatbot(query):
             return notify_msg or "No data found."
         all_years = sorted(set([d["Year"] for data in data_companies.values() for d in data]))
         df = pd.DataFrame({"Year": all_years})
-        for comp in companies:
-            df[comp] = [next((d[metric] for d in data_companies[comp] if d["Year"] == y), None) for y in all_years]
+
+        # Collect data for all requested metrics
+        for metric in metrics:
+            for comp in companies:
+                df[f"{comp} - {metric}"] = [next((d[metric] for d in data_companies[comp] if d["Year"] == y), None) for y in all_years]
         
         # Convert the values to millions (numerically) before plotting
         for col in df.columns[1:]:
             df[col] = df[col].apply(lambda x: convert_to_million(x) if x is not None else x)
 
         # Plot the comparison chart
-        df_melt = df.melt("Year", var_name="Company", value_name="Value")
+        df_melt = df.melt("Year", var_name="Company and Metric", value_name="Value")
         chart = alt.Chart(df_melt).mark_line(point=True).encode(
-            x="Year:O", y="Value:Q", color="Company:N"
+            x="Year:O", y="Value:Q", color="Company and Metric:N"
         )
         return (df, chart, notify_msg)
 
@@ -110,11 +117,15 @@ def financial_chatbot(query):
             return notify_msg or "No data found."
         df = pd.DataFrame({
             "Year": [d["Year"] for d in data],
-            f"{metric} ({comp})": [d[metric] for d in data]
         })
+        
+        # Collect data for all requested metrics
+        for metric in metrics:
+            df[f"{metric} ({comp})"] = [d[metric] for d in data]
 
         # Convert the values to millions (numerically) before plotting
-        df[f"{metric} ({comp})"] = df[f"{metric} ({comp})"].apply(lambda x: convert_to_million(x) if x is not None else x)
+        for col in df.columns[1:]:
+            df[col] = df[col].apply(lambda x: convert_to_million(x) if x is not None else x)
 
         # Plot the individual company chart
         chart = alt.Chart(df).mark_bar().encode(
