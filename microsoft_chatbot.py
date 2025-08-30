@@ -44,12 +44,10 @@ def extract_years(query):
     return [int(year) for year in years] if years else []
 
 def convert_to_million(value):
-    """Convert numbers to millions for better readability."""
+    """Convert numbers to millions for better readability when displaying."""
     if value >= 1E6:
         return f"{value / 1E6:.1f}M"  # One decimal place for cleaner output
     return str(value)
-
-    
 
 # ----------------- Chatbot Logic -----------------
 def financial_chatbot(query):
@@ -91,7 +89,11 @@ def financial_chatbot(query):
         all_years = sorted(set([d["Year"] for data in data_companies.values() for d in data]))
         df = pd.DataFrame({"Year": all_years})
         for comp in companies:
-            df[comp] = [convert_to_million(next((d[metric] for d in data_companies[comp] if d["Year"] == y), None)) for y in all_years]
+            df[comp] = [next((d[metric] for d in data_companies[comp] if d["Year"] == y), None) for y in all_years]
+        
+        # Convert the values to millions only for displaying purposes
+        for col in df.columns[1:]:
+            df[col] = df[col].apply(lambda x: convert_to_million(x) if x is not None else x)
         return (df, notify_msg)
 
     # single company
@@ -102,8 +104,11 @@ def financial_chatbot(query):
             return notify_msg or "No data found."
         df = pd.DataFrame({
             "Year": [d["Year"] for d in data],
-            f"{metric} ({comp})": [convert_to_million(d[metric]) for d in data]
+            f"{metric} ({comp})": [d[metric] for d in data]
         })
+        
+        # Convert the values to millions only for displaying purposes
+        df[f"{metric} ({comp})"] = df[f"{metric} ({comp})"].apply(lambda x: convert_to_million(x) if x is not None else x)
         return (df, notify_msg)
 
 # ----------------- Streamlit App -----------------
@@ -178,4 +183,3 @@ if query:
     response = financial_chatbot(query)
     st.session_state.history.append((query, response))
     st.rerun()  # refresh to show new message at bottom
-
