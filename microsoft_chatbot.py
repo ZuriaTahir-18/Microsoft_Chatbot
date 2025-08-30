@@ -145,7 +145,7 @@ st.title("💬 Financial Data Chatbot")
 # ----------------- Description Section -----------------
 st.markdown("""
 ### 📊 About This Chatbot
-This chatbot is designed to help you explore the **financial performance** of three major companies:
+This chatbot is designed to help you explore the **financial performance** of three major companies from the years 2022, 2023, and 2024:
 - **Microsoft**
 - **Tesla**
 - **Apple**
@@ -202,3 +202,4 @@ if query:
     response = financial_chatbot(query)
     st.session_state.history.append((query, response))
     st.rerun()  # refresh to show new message at bottom
+
