@@ -64,7 +64,7 @@ def financial_chatbot(query):
     elif "cash flow" in query_lower or "cash" in query_lower:
         metric = "Cash Flow"
     else:
-        return "⚠️ Sorry, I can only provide info on revenue, net income, assets, liabilities, or cash flow."
+        return "⚠️ Sorry, I can only provide info on revenue, net income, assets, liabilities, or cash flow of Microsoft , Tesla and Apple."
 
     if not companies:
         return notify_msg or "⚠️ Please mention at least one company (Microsoft, Tesla, or Apple)."
@@ -167,3 +167,4 @@ if query:
     response = financial_chatbot(query)
     st.session_state.history.append((query, response))
     st.rerun()  # refresh to show new message at bottom
+
