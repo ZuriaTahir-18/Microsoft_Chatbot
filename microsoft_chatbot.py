@@ -44,7 +44,7 @@ def financial_chatbot(query):
     years = extract_years(query)
 
     if not companies:
-        companies = ["Microsoft"]
+        return "⚠️ Please specify at least one company (Microsoft, Tesla, or Apple)."
 
     if "revenue" in query_lower:
         metric = "Total Revenue"
@@ -112,7 +112,7 @@ You can ask questions like:
 - `Show Tesla cash flow over the years`
 - `Give me Apple’s total assets`
 
-👉 If you don’t mention a company, the chatbot will assume **Microsoft** by default.  
+👉 You must **specify a company name** in your query.  
 👉 You can also compare multiple companies in one query.
 
 ---
