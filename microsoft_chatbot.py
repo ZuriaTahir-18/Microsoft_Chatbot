@@ -46,8 +46,10 @@ def extract_years(query):
 def convert_to_million(value):
     """Convert numbers to millions for better readability."""
     if value >= 1E6:
-        return f"{value / 1E6:.2f}M"
+        return f"{value / 1E6:.1f}M"  # One decimal place for cleaner output
     return str(value)
+
+    
 
 # ----------------- Chatbot Logic -----------------
 def financial_chatbot(query):
@@ -176,3 +178,4 @@ if query:
     response = financial_chatbot(query)
     st.session_state.history.append((query, response))
     st.rerun()  # refresh to show new message at bottom
+
