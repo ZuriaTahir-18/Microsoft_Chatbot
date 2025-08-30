@@ -96,7 +96,7 @@ def financial_chatbot(query):
         # Collect data for all requested metrics
         for metric in metrics:
             for comp in companies:
-                df[f"{comp} - {metric}"] = [next((d[metric] for d in data_companies[comp] if d["Year"] == y), None) for y in all_years]
+                df[f"{comp} - {metric} (in millions)"] = [next((d[metric] for d in data_companies[comp] if d["Year"] == y), None) for y in all_years]
         
         # Convert the values to millions (numerically) before plotting
         for col in df.columns[1:]:
@@ -108,7 +108,7 @@ def financial_chatbot(query):
             x="Year:O", 
             y="Value:Q", 
             color=alt.Color("Year:N", scale=alt.Scale(scheme='category20')),
-            tooltip=["Year", "Company and Metric", "Value"]
+            tooltip=["Year", "Company and Metric", alt.Tooltip("Value:Q", title="Value (in millions)")]
         )
         return (df, chart, notify_msg)
 
@@ -125,7 +125,7 @@ def financial_chatbot(query):
         
         # Collect data for all requested metrics
         for metric in metrics:
-            df[f"{metric} ({comp})"] = [d[metric] for d in data]
+            df[f"{metric} ({comp}) (in millions)"] = [d[metric] for d in data]
 
         # Convert the values to millions (numerically) before plotting
         for col in df.columns[1:]:
@@ -133,7 +133,7 @@ def financial_chatbot(query):
 
         # Plot the individual company chart
         chart = alt.Chart(df).mark_bar().encode(
-            x="Year:O", y=f"{metric} ({comp}):Q", color="Year:N", tooltip=["Year", f"{metric} ({comp})"]
+            x="Year:O", y=f"{metric} ({comp}) (in millions):Q", color="Year:N", tooltip=["Year", f"{metric} ({comp}) (in millions)"]
         )
         return (df, chart, notify_msg)
 
@@ -165,11 +165,12 @@ You can ask questions like:
 - `Give me Apple’s total assets`
 
 👉 You must **specify a company name** in your query.  
-👉 You can also compare multiple companies in one query
+👉 You can also compare multiple companies in one query  
 👉 Please check for spelling errors for better accuracy!
 
-
 ---
+
+**Note:** Values are displayed in millions.
 """)
 
 st.markdown("Ask me about **Revenue, Net Income, Assets, Liabilities, or Cash Flow** for **Microsoft, Tesla, and Apple**.")
@@ -201,8 +202,3 @@ if query:
     response = financial_chatbot(query)
     st.session_state.history.append((query, response))
     st.rerun()  # refresh to show new message at bottom
-
-
-
-
-
