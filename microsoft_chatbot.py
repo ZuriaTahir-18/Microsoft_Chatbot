@@ -36,18 +36,18 @@ def extract_companies(query):
     return list(set(companies))
 
 def extract_years(query):
-    # Capture years in the form of "2022 to 2024"
     years = re.findall(r'\b(20\d{2})\b', query)
-    
-    # If there are two years separated by 'to', include all years in that range
     if len(years) == 2:
         start_year, end_year = int(years[0]), int(years[1])
         years_in_range = list(range(start_year, end_year + 1))
         return years_in_range
-    
-    # If only one year is found, return that
     return [int(year) for year in years] if years else []
 
+def convert_to_million(value):
+    """Convert numbers to millions for better readability."""
+    if value >= 1E6:
+        return f"{value / 1E6:.2f}M"
+    return str(value)
 
 # ----------------- Chatbot Logic -----------------
 def financial_chatbot(query):
@@ -58,7 +58,6 @@ def financial_chatbot(query):
     # Check if any unknown companies were mentioned in the query
     notify_msg = ""
     if companies:
-        # Check if any of the companies mentioned is not in the valid list
         unknown_companies = [company for company in companies if company not in valid_companies]
         if unknown_companies:
             notify_msg = f"⚠️ Sorry, I only have data for Microsoft, Tesla, and Apple. Did you mean one of them? Please recheck your spelling if it was a typo."
@@ -90,7 +89,7 @@ def financial_chatbot(query):
         all_years = sorted(set([d["Year"] for data in data_companies.values() for d in data]))
         df = pd.DataFrame({"Year": all_years})
         for comp in companies:
-            df[comp] = [next((d[metric] for d in data_companies[comp] if d["Year"] == y), None) for y in all_years]
+            df[comp] = [convert_to_million(next((d[metric] for d in data_companies[comp] if d["Year"] == y), None)) for y in all_years]
         return (df, notify_msg)
 
     # single company
@@ -101,7 +100,7 @@ def financial_chatbot(query):
             return notify_msg or "No data found."
         df = pd.DataFrame({
             "Year": [d["Year"] for d in data],
-            f"{metric} ({comp})": [d[metric] for d in data]
+            f"{metric} ({comp})": [convert_to_million(d[metric]) for d in data]
         })
         return (df, notify_msg)
 
@@ -177,5 +176,3 @@ if query:
     response = financial_chatbot(query)
     st.session_state.history.append((query, response))
     st.rerun()  # refresh to show new message at bottom
-
-
