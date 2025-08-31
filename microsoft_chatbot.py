@@ -203,3 +203,4 @@ if query:
     st.session_state.history.append((query, response))
     st.rerun()  # refresh to show new message at bottom
 
+
